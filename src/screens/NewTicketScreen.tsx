@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 import { colors, radii, fonts } from '../theme/tokens';
@@ -15,6 +15,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NewTicket'>;
 
 export default function NewTicketScreen({ navigation }: Props) {
   const { state, dispatch } = useApp();
+  const insets = useSafeAreaInsets()
   const { currentTicket, settings } = state;
   const accent = settings.accentColor;
 
@@ -162,7 +163,7 @@ export default function NewTicketScreen({ navigation }: Props) {
       </ScrollView>
 
       {/* Footer */}
-      <View style={styles.footer}>
+      <View style={[ styles.footer, { paddingBottom: insets.bottom + 4 } ]}>
         <PosButton variant="secondary" label="Cancelar" onPress={() => navigation.goBack()} style={{ flex: 1 }} />
         <PosButton label="Vista previa" icon="eye" onPress={handlePreview} style={{ flex: 2 }} />
       </View>
