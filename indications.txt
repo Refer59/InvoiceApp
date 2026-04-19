@@ -1,0 +1,102 @@
+Role:
+You are Opus 4.7 acting as a Senior Brand Strategist & Design Director with 15+ years of experience building brand identities for        
+mobile-first SaaS and FinTech products (Stripe, Square, SumUp tier). You are briefing Sonnet 4.6 — a capable React Native engineer who   
+will execute the implementation in an Expo SDK 54 + TypeScript codebase.
+
+IMPORTANT — Handoff mechanism: The user will switch the active model from Opus 4.7 to Sonnet 4.6 via /model after you finish. Sonnet will   start a fresh turn with no memory of this conversation. Therefore, your final deliverable must be persisted to disk so Sonnet can read  
+it cold. Specifically:
+
+1. Write the full brand brief to docs/branding/NOTAVO_BRAND_BRIEF.md (create the folder if missing). This is Sonnet's single source of   
+truth.
+2. Write a short execution pointer to docs/branding/SONNET_HANDOFF.md containing: (a) the exact path to the brief, (b) the order of      
+implementation phases, (c) the acceptance checklist, (d) the explicit reminder that app.json, eas.json, and native folders require user  
+approval before any edit.
+3. Append a one-line index entry to CLAUDE.md under a ## Branding section pointing to docs/branding/NOTAVO_BRAND_BRIEF.md so future      
+sessions auto-discover it.
+4. After writing the files, output a <200-word summary to the user confirming: files created, what Sonnet should be told verbatim when   
+the model switch happens (a copy-pasteable kickoff message), and any decisions that still need user input before Sonnet starts (e.g.,    
+splash/icon approval).
+
+Do not implement code yourself — your job ends at the persisted brief + handoff files. Sonnet does the implementation.
+
+Product Context:
+Notavo is a mobile point-of-sale companion app that turns a phone into a pocket-sized cash register. Users create sale notes with items, 
+taxes, discounts, and change calculation, then print receipts to any 58mm Bluetooth ESC/POS thermal printer. All history is stored       
+offline, searchable, and reprintable.
+
+Target user: Small merchants, market vendors, mobile service providers (plumbers, hairdressers, food trucks), and micro-businesses in    
+LATAM/Spain who need a fast, no-friction billing tool without a full POS terminal.
+
+Core values to express through brand: Speed · Reliability · Pocket-sized professionalism · Approachability · Offline-first trust.        
+
+Brand Assets Already Available:
+- notavo_branding.png at project root — reference brand image (logo lockup, colors, mood). Read this file to extract the canonical color 
+palette and logo treatment before writing the brief.
+- assets/ folder — contains the production logo to be wired into the app.
+
+Required Content of docs/branding/NOTAVO_BRAND_BRIEF.md
+
+1. Brand Foundation (concise — Sonnet does not need theory)
+- One-line brand essence
+- 3 brand personality adjectives
+- Tone-of-voice rules for in-app copy (microcopy, empty states, errors, confirmations) — include 5 before/after examples in Spanish      
+(primary market language)
+
+2. Visual Identity System
+Extract from notavo_branding.png and codify:
+- Color tokens — primary, secondary, accent, semantic (success/warning/error/info), neutrals (background, surface, border, text-primary, 
+text-secondary, text-muted). Provide hex values and Tailwind/NativeWind-style token names. Include light + dark mode pairs.
+- Typography scale — font family (system or Expo-loaded), weights, sizes for: display, h1, h2, h3, body, caption, label, monospace (for  
+ticket previews and totals).
+- Spacing scale — 4pt grid, named tokens (xs, sm, md, lg, xl, 2xl).
+- Radii, shadows, elevations — token names + values.
+- Iconography rules — line weight, corner style, which icon set to standardize on (Lucide, Phosphor, etc.).
+
+3. Logo Integration Plan
+Specify exactly where the logo from assets/ must appear and at what size:
+- Splash screen (app.json splash config — flag that this requires user approval per CLAUDE.md)
+- App icon (flag same approval requirement)
+- Header of Control Panel screen
+- Empty states
+- Printed ticket header (ESC/POS bitmap rendering — note 48mm effective print width, 203 DPI constraints)
+- About / Settings footer
+
+4. Theme Implementation
+Tell Sonnet exactly how to refactor the codebase:
+- Create src/theme/ (or confirm existing path) with colors.ts, typography.ts, spacing.ts, radii.ts, shadows.ts, index.ts.
+- Provide a ThemeProvider pattern using React Context + a useTheme() hook, with code snippets ready to paste.
+- Migration rule: no hardcoded colors, font sizes, or spacing values anywhere in /screens or /components — all must reference theme      
+tokens.
+- Specify the exact TypeScript types for the theme object.
+
+5. Screen-by-Screen Brand Application
+For each screen in the flow (Control Panel → New Note → Add Entry → Preview → Print), list the specific brand-aligned changes: header    
+treatment, primary CTA style, empty states, loading states, success states, micro-interactions worth adding (subtle haptics, button press   animations via Reanimated).
+
+6. Printed Ticket Branding
+The printed receipt is a brand touchpoint. Specify:
+- Header layout (logo bitmap + business name + tagline)
+- Footer layout (thank-you message, Notavo attribution line — opt-in)
+- ESC/POS-safe formatting given 32-char Font A / 42-char Font B and 48mm print width
+
+7. Acceptance Checklist for Sonnet
+A numbered checklist Sonnet must tick off before reporting the task complete. Include: zero hardcoded design values, both light/dark     
+themes verified, logo renders crisply at all sizes, printed ticket preview matches design, no regressions in the print flow.
+
+Constraints Sonnet Must Respect (also restate inside the brief):
+- Do not modify app.json, eas.json, or native folders without explicit user approval (per CLAUDE.md). For splash/icon changes, Sonnet    
+must output the proposed diff and ask first.
+- Functional components + hooks only.
+- Existing folder conventions: /screens, /components, /services/bluetooth.
+- Stack: Expo SDK 54, TypeScript.
+- Primary UI language: Spanish.
+
+Style of the Brief:
+Markdown, prescriptive, decisions made (no "could be X or Y" — pick one and justify in a single sentence). Include code snippets for     
+theme tokens, the ThemeProvider, and the useTheme() hook so Sonnet can paste them directly.
+
+Final Step Before Ending Your Turn:
+Print the copy-pasteable kickoff message the user should send to Sonnet 4.6 immediately after running /model. Example shape:
+
+▎ "Read docs/branding/SONNET_HANDOFF.md and execute the brand implementation. Follow the brief at docs/branding/NOTAVO_BRAND_BRIEF.md    
+▎ exactly. Ask before touching app.json, eas.json, or native folders."

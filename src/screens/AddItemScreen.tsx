@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { X } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import type { RootStackParamList } from '../../App';
-import { colors, radii, fonts } from '../theme/tokens';
-import { Icon } from '../components/Icon';
+import { useTheme } from '../theme';
 import { PosButton } from '../components/PosButton';
 import { useApp } from '../state/AppContext';
 
@@ -14,22 +15,31 @@ type Props = NativeStackScreenProps<RootStackParamList, 'AddItem'>;
 
 export default function AddItemScreen({ navigation }: Props) {
   const { state, dispatch } = useApp();
-  const accent = state.settings.accentColor;
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const sp = theme.spacing;
+  const r = theme.radii;
+  const fs = theme.typography.fontSizes;
 
   const [cant, setCant] = useState('1');
   const [clave, setClave] = useState('');
   const [descrip, setDescrip] = useState('');
   const [precio, setPrecio] = useState('');
+  const [focused, setFocused] = useState<string | null>(null);
 
-  const importe = (parseFloat(cant || '0') * parseFloat(precio || '0')).toFixed(2);
+  const locale = state.settings.locale ?? 'es-MX';
+  const fmtMoney = (n: number) =>
+    new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+  const importe = parseFloat(cant || '0') * parseFloat(precio || '0');
 
   const handleAdd = () => {
     if (!descrip.trim()) {
-      Alert.alert('Descripción requerida', 'Ingresa la descripción del artículo.');
+      Alert.alert('Descripción requerida', 'Ingresá la descripción del artículo.');
       return;
     }
     if (!precio || parseFloat(precio) <= 0) {
-      Alert.alert('Precio inválido', 'Ingresa un precio mayor a cero.');
+      Alert.alert('Precio inválido', 'Ingresá un precio mayor a cero.');
       return;
     }
 
@@ -37,29 +47,66 @@ export default function AddItemScreen({ navigation }: Props) {
       CANT: cant,
       CLAVE: clave || '—',
       DESCRIP: descrip.trim(),
-      PREC: `$${parseFloat(precio).toFixed(2)}`,
-      IMP: importe,
+      PREC: `$${fmtMoney(parseFloat(precio))}`,
+      IMP: fmtMoney(importe),
     };
 
     const currentTicket = state.currentTicket;
     if (!currentTicket) return;
 
     const items = [...currentTicket.items, newItem];
-    const subtotal = items.reduce((s, it) => s + parseFloat(it.IMP || '0'), 0);
+    const subtotal = items.reduce((s, it) => s + parseFloat(it.IMP.replace(/[^0-9.,]/g, '').replace(',', '.') || '0'), 0);
     const taxes = subtotal * 0.16;
     const total = subtotal + taxes - currentTicket.discount;
 
-    dispatch({
-      type: 'UPDATE_TICKET',
-      ticket: { items, subtotal, taxes, total },
-    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    dispatch({ type: 'UPDATE_TICKET', ticket: { items, subtotal, taxes, total } });
     navigation.goBack();
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.bg.base },
+    header: {
+      flexDirection: 'row', alignItems: 'center', gap: sp.md,
+      paddingHorizontal: sp.lg, paddingVertical: sp.md,
+      backgroundColor: c.bg.surface, borderBottomWidth: 1, borderBottomColor: c.border.subtle,
+    },
+    closeBtn: { padding: sp.xs },
+    title: { fontSize: fs.h3, fontWeight: '700', color: c.text.primary, fontFamily: theme.typography.fonts.uiBold },
+    content: { padding: sp.lg },
+    card: {
+      backgroundColor: c.bg.surface, borderRadius: r.lg,
+      borderWidth: 1, borderColor: c.border.subtle, padding: sp.lg, gap: sp.lg,
+    },
+    field: { gap: sp.xs },
+    fieldLabel: {
+      fontSize: fs.label, fontWeight: '600', color: c.text.secondary,
+      fontFamily: theme.typography.fonts.uiSemiBold, textTransform: 'uppercase', letterSpacing: 0.6,
+    },
+    fieldInput: {
+      height: 48, borderWidth: 1, borderColor: c.border.subtle, borderRadius: r.sm,
+      paddingHorizontal: sp.md, fontSize: fs.input, color: c.text.primary,
+      fontFamily: theme.typography.fonts.ui, backgroundColor: c.bg.base,
+    },
+    fieldInputFocused: { borderColor: c.brand.primary, borderWidth: 1.5 },
+    importeRow: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      borderWidth: 1, borderColor: c.brand.primary + '55',
+      borderRadius: r.md, padding: sp.md, marginTop: sp.xs,
+      backgroundColor: c.brand.primarySoft,
+    },
+    importeLabel: { fontSize: fs.small, fontWeight: '600', fontFamily: theme.typography.fonts.uiSemiBold, color: c.brand.primaryInk },
+    importeValue: { fontSize: fs.large, fontWeight: '700', fontFamily: theme.typography.fonts.monoSemiBold, color: c.brand.primary },
+    footer: {
+      flexDirection: 'row', gap: sp.sm, padding: sp.lg,
+      backgroundColor: c.bg.surface, borderTopWidth: 1, borderTopColor: c.border.subtle,
+    },
+  }), [theme]);
+
   const Field = ({
-    label, value, onChange, keyboardType = 'default', placeholder = '',
+    id, label, value, onChange, keyboardType = 'default', placeholder = '',
   }: {
-    label: string; value: string;
+    id: string; label: string; value: string;
     onChange: (v: string) => void;
     keyboardType?: 'default' | 'numeric' | 'decimal-pad';
     placeholder?: string;
@@ -67,37 +114,36 @@ export default function AddItemScreen({ navigation }: Props) {
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
-        style={styles.fieldInput}
+        style={[styles.fieldInput, focused === id && styles.fieldInputFocused]}
         value={value}
         onChangeText={onChange}
         keyboardType={keyboardType}
         placeholder={placeholder}
-        placeholderTextColor={colors.textFaint}
+        placeholderTextColor={c.text.muted}
+        onFocus={() => setFocused(id)}
+        onBlur={() => setFocused(null)}
       />
     </View>
   );
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon name="x" size={22} color={colors.text} />
+        <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
+          <X size={22} color={c.text.primary} strokeWidth={1.75} />
         </Pressable>
         <Text style={styles.title}>Agregar partida</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Field label="Cantidad" value={cant} onChange={setCant} keyboardType="decimal-pad" placeholder="1" />
-          <Field label="Clave / SKU" value={clave} onChange={setClave} placeholder="Opcional" />
-          <Field label="Descripción *" value={descrip} onChange={setDescrip} placeholder="Nombre del artículo" />
-          <Field label="Precio unitario *" value={precio} onChange={setPrecio} keyboardType="decimal-pad" placeholder="0.00" />
-
-          {/* Importe preview */}
-          <View style={[styles.importeRow, { backgroundColor: accent + '12', borderColor: accent + '33' }]}>
-            <Text style={[styles.importeLabel, { color: accent }]}>Importe</Text>
-            <Text style={[styles.importeValue, { color: accent }]}>${importe}</Text>
+          <Field id="cant" label="Cantidad" value={cant} onChange={setCant} keyboardType="decimal-pad" placeholder="1" />
+          <Field id="clave" label="Clave / SKU" value={clave} onChange={setClave} placeholder="Opcional" />
+          <Field id="descrip" label="Descripción *" value={descrip} onChange={setDescrip} placeholder="Nombre del artículo" />
+          <Field id="precio" label="Precio unitario *" value={precio} onChange={setPrecio} keyboardType="decimal-pad" placeholder="0.00" />
+          <View style={styles.importeRow}>
+            <Text style={styles.importeLabel}>Importe</Text>
+            <Text style={styles.importeValue}>${fmtMoney(importe)}</Text>
           </View>
         </View>
       </ScrollView>
@@ -109,36 +155,3 @@ export default function AddItemScreen({ navigation }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border,
-  },
-  backBtn: { padding: 4 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text, fontFamily: fonts.ui },
-  content: { padding: 16 },
-  card: {
-    backgroundColor: colors.surface, borderRadius: radii.lg,
-    borderWidth: 1, borderColor: colors.border, padding: 16, gap: 14,
-  },
-  field: { gap: 6 },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: colors.textMuted, fontFamily: fonts.ui, textTransform: 'uppercase', letterSpacing: 0.4 },
-  fieldInput: {
-    height: 48, borderWidth: 1, borderColor: colors.border, borderRadius: radii.sm,
-    paddingHorizontal: 14, fontSize: 16, color: colors.text, fontFamily: fonts.ui,
-    backgroundColor: colors.bg,
-  },
-  importeRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderWidth: 1, borderRadius: radii.md, padding: 14, marginTop: 4,
-  },
-  importeLabel: { fontSize: 14, fontWeight: '600', fontFamily: fonts.ui },
-  importeValue: { fontSize: 22, fontWeight: '700', fontFamily: fonts.mono },
-  footer: {
-    flexDirection: 'row', gap: 10, padding: 16,
-    backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border,
-  },
-});

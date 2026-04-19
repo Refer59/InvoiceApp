@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import type {
   CompanyProfile,
   AppSettings,
@@ -16,7 +16,7 @@ import {
   addHistoryEntry,
 } from '../services/storage';
 
-// ─── State shape ─────────────────────────────────────────────────────────────
+// ─── State ───────────────────────────────────────────────────────────────────
 
 interface AppState {
   company: CompanyProfile;
@@ -52,8 +52,9 @@ const initial: AppState = {
     SUCURSAL: '',
     NOMCAJA: '',
     USUARIO: '',
+    gracias: '¡Gracias por tu compra!',
   },
-  settings: { accentColor: '#3B6AEA', paperWidth: 32 },
+  settings: { accentColor: '#E8702E', paperWidth: 32, showNotavoAttribution: false },
   currentTicket: null,
   history: [],
   printerStatus: 'disconnected',

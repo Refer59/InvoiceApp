@@ -1,6 +1,6 @@
 export type Alignment = 'I' | 'C' | 'D'; // left / center / right
 
-// ─── Template DSL (matches example_data.json) ───────────────────────────────
+// ─── Template DSL ────────────────────────────────────────────────────────────
 
 export interface TextNode {
   TIPO: 'TEXTO';
@@ -36,7 +36,7 @@ export interface CellNode {
   VALOR?: string;
 }
 
-export type RowDef = Record<string, CellNode | string>; // key = col REG, 'REPETIDO' = array key
+export type RowDef = Record<string, CellNode | string>;
 
 export interface TableNode {
   TIPO: 'TABLA';
@@ -50,7 +50,7 @@ export interface TableNode {
 
 export type TemplateNode = TextNode | DivisionNode | RetCarroNode | TableNode;
 
-// ─── Runtime values ───────────────────────────────────────────────────────────
+// ─── Runtime values ──────────────────────────────────────────────────────────
 
 export type TicketValues = Record<string, string | TicketItem[] | PaymentItem[] | TaxItem[]>;
 
@@ -86,11 +86,14 @@ export interface CompanyProfile {
   NOMCAJA: string;
   USUARIO: string;
   logoBase64?: string;
+  gracias?: string;
 }
 
 export interface AppSettings {
   accentColor: string;
   paperWidth: 32 | 42;
+  locale?: string;
+  showNotavoAttribution: boolean;
 }
 
 // ─── Ticket draft ─────────────────────────────────────────────────────────────

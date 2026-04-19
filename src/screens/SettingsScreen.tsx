@@ -1,59 +1,154 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { ChevronLeft, ChevronRight, Sun, Moon, Smartphone, Globe } from 'lucide-react-native';
 import type { RootStackParamList } from '../../App';
-import { colors, radii, fonts } from '../theme/tokens';
-import { Icon } from '../components/Icon';
+import { useTheme } from '../theme';
+import type { ThemeMode } from '../theme';
+import { NotavoLogo } from '../components/NotavoMark';
 import { BottomNav } from '../components/BottomNav';
+import { LocalePickerModal } from '../components/LocalePickerModal';
 import { useApp } from '../state/AppContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
-const ACCENT_COLORS = [
-  '#3B6AEA', '#10B981', '#F59E0B', '#EF4444',
-  '#8B5CF6', '#EC4899', '#06B6D4', '#64748B',
-];
+const LOCALE_LABELS: Record<string, string> = {
+  'es-AR': 'Español · Argentina',
+  'es-ES': 'Español · España',
+  'es-MX': 'Español · México',
+  'es-CO': 'Español · Colombia',
+};
 
 export default function SettingsScreen({ navigation }: Props) {
   const { state, updateSettings } = useApp();
-  const accent = state.settings.accentColor;
+  const { theme, modeOverride, setMode } = useTheme();
+  const c = theme.colors;
+  const sp = theme.spacing;
+  const r = theme.radii;
+  const fs = theme.typography.fontSizes;
+  const [localeModal, setLocaleModal] = useState(false);
 
-  const handleAccent = async (color: string) => {
-    await updateSettings({ ...state.settings, accentColor: color });
+  const handleThemeMode = (m: ThemeMode | 'system') => setMode(m);
+
+  const handleToggleAttribution = async (val: boolean) => {
+    await updateSettings({ ...state.settings, showNotavoAttribution: val });
   };
+
+  const handleLocale = async (locale: string | undefined) => {
+    await updateSettings({ ...state.settings, locale });
+  };
+
+  const MODES: { key: ThemeMode | 'system'; label: string; Icon: any }[] = [
+    { key: 'light', label: 'Claro', Icon: Sun },
+    { key: 'dark', label: 'Oscuro', Icon: Moon },
+    { key: 'system', label: 'Sistema', Icon: Smartphone },
+  ];
+
+  const styles = useMemo(() => StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.bg.base },
+    header: {
+      flexDirection: 'row', alignItems: 'center', gap: sp.md,
+      paddingHorizontal: sp.lg, paddingVertical: sp.md,
+      backgroundColor: c.bg.surface, borderBottomWidth: 1, borderBottomColor: c.border.subtle,
+    },
+    backBtn: { padding: sp.xs },
+    title: { fontSize: fs.h3, fontWeight: '700', color: c.text.primary, fontFamily: theme.typography.fonts.uiBold },
+    content: { padding: sp.lg, gap: sp.md, paddingBottom: sp['2xl'] },
+    card: {
+      backgroundColor: c.bg.surface, borderRadius: r.lg,
+      borderWidth: 1, borderColor: c.border.subtle, padding: sp.lg, gap: sp.md,
+    },
+    sectionTitle: {
+      fontSize: fs.label, fontWeight: '600', color: c.text.secondary,
+      textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: theme.typography.fonts.uiSemiBold,
+    },
+    modeRow: { flexDirection: 'row', gap: sp.sm },
+    modeBtn: {
+      flex: 1, alignItems: 'center', gap: sp.xs, paddingVertical: sp.md,
+      borderRadius: r.sm, borderWidth: 1.5,
+    },
+    modeBtnLabel: { fontSize: fs.label, fontWeight: '600', fontFamily: theme.typography.fonts.uiSemiBold },
+    linkRow: { flexDirection: 'row', alignItems: 'center', gap: sp.md, paddingVertical: sp.xs },
+    linkIcon: { width: 36, height: 36, borderRadius: r.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: c.brand.primarySoft },
+    linkLabel: { flex: 1, fontSize: fs.body, color: c.text.primary, fontWeight: '500', fontFamily: theme.typography.fonts.ui },
+    linkValue: { fontSize: fs.caption, color: c.text.muted, fontFamily: theme.typography.fonts.ui, marginRight: sp.xs },
+    toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: sp.xs },
+    toggleLabel: { fontSize: fs.body, color: c.text.primary, fontWeight: '500', fontFamily: theme.typography.fonts.ui, flex: 1 },
+    toggleSub: { fontSize: fs.label, color: c.text.muted, fontFamily: theme.typography.fonts.ui, marginTop: 2 },
+    footer: { alignItems: 'center', gap: sp.xs, marginTop: sp.lg },
+    footerVersion: { fontSize: fs.label, color: c.text.muted, fontFamily: theme.typography.fonts.mono, textAlign: 'center' },
+  }), [theme]);
+
+  const localeLabel = state.settings.locale
+    ? (LOCALE_LABELS[state.settings.locale] ?? state.settings.locale)
+    : 'Automático';
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon name="arrow_left" size={22} color={colors.text} />
+          <ChevronLeft size={22} color={c.text.primary} strokeWidth={1.75} />
         </Pressable>
         <Text style={styles.title}>Ajustes</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Color accent */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Color de acento</Text>
-          <View style={styles.swatches}>
-            {ACCENT_COLORS.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => handleAccent(c)}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: c },
-                  accent === c && styles.swatchActive,
-                ]}
-              >
-                {accent === c && <Icon name="check" size={16} color="#fff" />}
-              </Pressable>
-            ))}
+          <Text style={styles.sectionTitle}>Apariencia</Text>
+          <View style={styles.modeRow}>
+            {MODES.map(({ key, label, Icon }) => {
+              const active = modeOverride === key;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => handleThemeMode(key)}
+                  style={[
+                    styles.modeBtn,
+                    {
+                      borderColor: active ? c.brand.primary : c.border.subtle,
+                      backgroundColor: active ? c.brand.primarySoft : c.bg.surfaceAlt,
+                    },
+                  ]}
+                >
+                  <Icon size={20} color={active ? c.brand.primary : c.text.secondary} strokeWidth={1.75} />
+                  <Text style={[styles.modeBtnLabel, { color: active ? c.brand.primaryInk : c.text.secondary }]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        {/* Quick links */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Formato de números</Text>
+          <Pressable style={styles.linkRow} onPress={() => setLocaleModal(true)}>
+            <View style={styles.linkIcon}>
+              <Globe size={18} color={c.brand.primary} strokeWidth={1.75} />
+            </View>
+            <Text style={styles.linkLabel}>Idioma regional</Text>
+            <Text style={styles.linkValue}>{localeLabel}</Text>
+            <ChevronRight size={18} color={c.text.muted} strokeWidth={1.75} />
+          </Pressable>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Ticket impreso</Text>
+          <View style={styles.toggleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.toggleLabel}>Mostrar "Hecho con Notavo"</Text>
+              <Text style={styles.toggleSub}>Aparece al pie del ticket</Text>
+            </View>
+            <Switch
+              value={state.settings.showNotavoAttribution}
+              onValueChange={handleToggleAttribution}
+              trackColor={{ false: c.border.subtle, true: c.brand.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Configuración</Text>
           {[
@@ -65,53 +160,29 @@ export default function SettingsScreen({ navigation }: Props) {
               onPress={() => navigation.navigate(item.route as any)}
               style={styles.linkRow}
             >
-              <View style={[styles.linkIcon, { backgroundColor: accent + '18' }]}>
-                <Icon name={item.icon as any} size={18} color={accent} />
+              <View style={styles.linkIcon}>
+                <ChevronRight size={18} color={c.brand.primary} strokeWidth={1.75} />
               </View>
               <Text style={styles.linkLabel}>{item.label}</Text>
-              <Icon name="chevron_right" size={18} color={colors.textFaint} />
+              <ChevronRight size={18} color={c.text.muted} strokeWidth={1.75} />
             </Pressable>
           ))}
         </View>
 
-        {/* Version */}
-        <Text style={styles.version}>TicketPOS v1.0.0 · Expo SDK 54</Text>
+        <View style={styles.footer}>
+          <NotavoLogo fontSize={20} color={c.text.muted} />
+          <Text style={styles.footerVersion}>v1.0.0</Text>
+        </View>
       </ScrollView>
 
       <BottomNav active="settings" onNavigate={(route) => navigation.navigate(route as any)} />
+
+      <LocalePickerModal
+        visible={localeModal}
+        current={state.settings.locale}
+        onSelect={handleLocale}
+        onClose={() => setLocaleModal(false)}
+      />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border,
-  },
-  backBtn: { padding: 4 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text, fontFamily: fonts.ui },
-  content: { padding: 16, gap: 12, paddingBottom: 32 },
-  card: {
-    backgroundColor: colors.surface, borderRadius: radii.lg,
-    borderWidth: 1, borderColor: colors.border, padding: 16, gap: 12,
-  },
-  sectionTitle: {
-    fontSize: 12, fontWeight: '600', color: colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: fonts.ui,
-  },
-  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  swatch: {
-    width: 36, height: 36, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'transparent',
-  },
-  swatchActive: { borderColor: colors.text, borderWidth: 2 },
-  linkRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6,
-  },
-  linkIcon: { width: 36, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  linkLabel: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500', fontFamily: fonts.ui },
-  version: { textAlign: 'center', fontSize: 12, color: colors.textFaint, fontFamily: fonts.mono, marginTop: 8 },
-});

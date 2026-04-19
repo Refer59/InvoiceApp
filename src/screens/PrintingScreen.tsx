@@ -1,11 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Alert } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Animated, {
+  useSharedValue, useAnimatedStyle,
+  withRepeat, withTiming, withSpring, Easing,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import type { RootStackParamList } from '../../App';
-import { colors, radii, fonts } from '../theme/tokens';
+import { useTheme } from '../theme';
 import { PosButton } from '../components/PosButton';
-import { Icon } from '../components/Icon';
+import { NotavoMark } from '../components/NotavoMark';
 import { useApp } from '../state/AppContext';
 import { buildPrintJob, chunkJob } from '../services/bluetooth/escpos';
 import { printJob, isConnected } from '../services/bluetooth/connection';
@@ -18,69 +23,76 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Printing'>;
 
 export default function PrintingScreen({ navigation }: Props) {
   const { state, saveTicketToHistory, dispatch } = useApp();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const sp = theme.spacing;
+  const r = theme.radii;
+  const fs = theme.typography.fontSizes;
   const { currentTicket, company, settings } = state;
-  const accent = settings.accentColor;
 
   const [phase, setPhase] = useState<Phase>('sending');
   const [errorMsg, setErrorMsg] = useState('');
-  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  const rotation = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const markScale = useSharedValue(0.6);
+  const markOpacity = useSharedValue(0);
 
   useEffect(() => {
-    const spin = Animated.loop(
-      Animated.timing(spinAnim, { toValue: 1, duration: 900, useNativeDriver: true })
+    rotation.value = withRepeat(
+      withTiming(360, { duration: 1200, easing: Easing.linear }), -1, false,
     );
-    spin.start();
-    return () => spin.stop();
+    scale.value = withRepeat(
+      withTiming(1.05, { duration: 600, easing: Easing.inOut(Easing.ease) }), -1, true,
+    );
   }, []);
 
   useEffect(() => {
     (async () => {
-      if (!currentTicket) {
-        navigation.goBack();
-        return;
-      }
-
+      if (!currentTicket) { navigation.goBack(); return; }
       try {
-        if (!isConnected()) {
-          throw new Error('No hay impresora conectada. Ve a Impresora para emparejar.');
-        }
+        if (!isConnected()) throw new Error('No pudimos conectar con la impresora. Revisá que esté encendida.');
+
+        const locale = settings.locale ?? 'es-MX';
+        const fmtMoney = (n: number) =>
+          new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
         const values: TicketValues = {
-          RZN_EMPRESA: company.RZN_EMPRESA,
-          DIR_EMPRESA: company.DIR_EMPRESA,
-          RFC_EMPRESA: company.RFC_EMPRESA,
-          SUCURSAL: company.SUCURSAL,
-          NOMCAJA: company.NOMCAJA,
-          NUMDOCTO: currentTicket.NUMDOCTO,
-          FECHADOC: currentTicket.FECHADOC,
-          HORADOC: currentTicket.HORADOC,
+          RZN_EMPRESA: company.RZN_EMPRESA, DIR_EMPRESA: company.DIR_EMPRESA,
+          RFC_EMPRESA: company.RFC_EMPRESA, SUCURSAL: company.SUCURSAL, NOMCAJA: company.NOMCAJA,
+          NUMDOCTO: currentTicket.NUMDOCTO, FECHADOC: currentTicket.FECHADOC, HORADOC: currentTicket.HORADOC,
           USUARIO: company.USUARIO,
-          SUBTOTAL: `$${currentTicket.subtotal.toFixed(2)}`,
-          DESCUENTO: `$${currentTicket.discount.toFixed(2)}`,
-          IMPUESTOS: `$${currentTicket.taxes.toFixed(2)}`,
-          TOTALDOC: `$${currentTicket.total.toFixed(2)}`,
-          RECIBIDO: `$${currentTicket.received.toFixed(2)}`,
-          CAMBIODOCTO: `$${currentTicket.change.toFixed(2)}`,
-          NUM_VENDIDOS: String(currentTicket.items.length),
-          MONTOLETRAS: '',
+          SUBTOTAL: `$${fmtMoney(currentTicket.subtotal)}`, DESCUENTO: `$${fmtMoney(currentTicket.discount)}`,
+          IMPUESTOS: `$${fmtMoney(currentTicket.taxes)}`, TOTALDOC: `$${fmtMoney(currentTicket.total)}`,
+          RECIBIDO: `$${fmtMoney(currentTicket.received)}`, CAMBIODOCTO: `$${fmtMoney(currentTicket.change)}`,
+          NUM_VENDIDOS: String(currentTicket.items.length), MONTOLETRAS: '',
           PARTIDAS: currentTicket.items,
           FORMAPAGO: currentTicket.payments.length > 0
             ? currentTicket.payments
-            : [{ CONCEP: 'Efectivo', IMPORTE: `$${currentTicket.received.toFixed(2)}` }],
-          IVA: [],
-          IEPS: [],
-          ISR: [],
+            : [{ CONCEP: 'Efectivo', IMPORTE: `$${fmtMoney(currentTicket.received)}` }],
+          IVA: [], IEPS: [], ISR: [],
         };
 
         const lines = interpretTemplate(defaultTemplate as TemplateNode[], values);
-        const job = buildPrintJob(lines, company.logoBase64);
-        const chunks = chunkJob(job);
-
-        await printJob(chunks, 20);
+        const job = buildPrintJob(lines, company.logoBase64, {
+          gracias: company.gracias,
+          showNotavoAttribution: settings.showNotavoAttribution,
+          NUMDOCTO: currentTicket.NUMDOCTO,
+          FECHADOC: currentTicket.FECHADOC,
+          HORADOC: currentTicket.HORADOC,
+        });
+        await printJob(chunkJob(job), 20);
 
         await saveTicketToHistory(currentTicket);
         dispatch({ type: 'CLEAR_TICKET' });
+
+        rotation.value = 0;
+        scale.value = 1;
+        markOpacity.value = withTiming(1, { duration: 200 });
+        markScale.value = withSpring(1, { damping: 12, stiffness: 180 });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setPhase('done');
+        setTimeout(() => navigation.navigate('Dashboard'), 1800);
       } catch (err: any) {
         setPhase('error');
         setErrorMsg(err?.message ?? 'Error desconocido al imprimir');
@@ -88,61 +100,59 @@ export default function PrintingScreen({ navigation }: Props) {
     })();
   }, []);
 
-  const spinDeg = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }, { scale: scale.value }],
+  }));
+  const markEntryStyle = useAnimatedStyle(() => ({
+    opacity: markOpacity.value,
+    transform: [{ scale: markScale.value }],
+  }));
+
+  const styles = useMemo(() => StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.bg.base },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: sp['2xl'], gap: sp.lg },
+    phaseTitle: { fontSize: fs.large, fontWeight: '700', color: c.text.primary, fontFamily: theme.typography.fonts.uiBold, textAlign: 'center' },
+    phaseSub: { fontSize: fs.small, color: c.text.secondary, fontFamily: theme.typography.fonts.ui, textAlign: 'center' },
+    doneCircle: { width: 96, height: 96, borderRadius: r.full, alignItems: 'center', justifyContent: 'center', backgroundColor: c.semantic.success + '18' },
+    errorCircle: { width: 96, height: 96, borderRadius: r.full, alignItems: 'center', justifyContent: 'center', backgroundColor: c.semantic.danger + '18' },
+    errorTitle: { fontSize: fs.large, fontWeight: '700', color: c.semantic.danger, fontFamily: theme.typography.fonts.uiBold, textAlign: 'center' },
+    doneBtn: { marginTop: sp.sm },
+    errorBtns: { flexDirection: 'row', gap: sp.sm, marginTop: sp.sm },
+  }), [theme]);
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <View style={styles.center}>
         {phase === 'sending' && (
           <>
-            <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
-              <Icon name="printer" size={56} color={accent} />
+            <Animated.View style={spinStyle}>
+              <NotavoMark size={72} color={c.brand.primary} />
             </Animated.View>
-            <Text style={styles.phaseTitle}>Enviando a impresora…</Text>
+            <Text style={styles.phaseTitle}>Imprimiendo…</Text>
             <Text style={styles.phaseSub}>No apagues la impresora</Text>
           </>
         )}
-
         {phase === 'done' && (
           <>
-            <View style={[styles.doneCircle, { backgroundColor: colors.success + '18' }]}>
-              <Icon name="check" size={48} color={colors.success} />
-            </View>
-            <Text style={styles.phaseTitle}>¡Impresión exitosa!</Text>
-            <Text style={styles.phaseSub}>El ticket fue enviado y guardado</Text>
-            <PosButton
-              label="Listo"
-              icon="check"
-              onPress={() => navigation.navigate('Dashboard')}
-              style={styles.doneBtn}
-            />
+            <Animated.View style={[styles.doneCircle, markEntryStyle]}>
+              <NotavoMark size={48} color={c.semantic.success} />
+            </Animated.View>
+            <Text style={styles.phaseTitle}>Listo.</Text>
+            <Text style={styles.phaseSub}>Ticket guardado</Text>
+            <PosButton label="Inicio" onPress={() => navigation.navigate('Dashboard')} style={styles.doneBtn} />
           </>
         )}
-
         {phase === 'error' && (
           <>
-            <View style={[styles.doneCircle, { backgroundColor: colors.danger + '18' }]}>
-              <Icon name="x" size={48} color={colors.danger} />
+            <View style={styles.errorCircle}>
+              <NotavoMark size={48} color={c.brand.deep} />
             </View>
-            <Text style={[styles.phaseTitle, { color: colors.danger }]}>Error al imprimir</Text>
+            <Text style={styles.errorTitle}>No pudimos imprimir.</Text>
             <Text style={styles.phaseSub}>{errorMsg}</Text>
             <View style={styles.errorBtns}>
-              <PosButton
-                variant="secondary"
-                label="Cancelar"
-                onPress={() => navigation.goBack()}
-                style={{ flex: 1 }}
-              />
-              <PosButton
-                variant="danger"
-                label="Reintentar"
-                icon="refresh"
-                onPress={() => {
-                  setPhase('sending');
-                  setErrorMsg('');
-                }}
-                style={{ flex: 1 }}
-              />
+              <PosButton variant="secondary" label="Volver" onPress={() => navigation.goBack()} style={{ flex: 1 }} />
+              <PosButton variant="danger" label="Reintentar" icon="refresh"
+                onPress={() => { setPhase('sending'); setErrorMsg(''); }} style={{ flex: 1 }} />
             </View>
           </>
         )}
@@ -150,13 +160,3 @@ export default function PrintingScreen({ navigation }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
-  phaseTitle: { fontSize: 22, fontWeight: '700', color: colors.text, fontFamily: fonts.ui, textAlign: 'center' },
-  phaseSub: { fontSize: 14, color: colors.textMuted, fontFamily: fonts.ui, textAlign: 'center' },
-  doneCircle: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
-  doneBtn: { marginTop: 8, paddingHorizontal: 40 },
-  errorBtns: { flexDirection: 'row', gap: 10, marginTop: 8 },
-});

@@ -17,6 +17,7 @@ const DEFAULT_COMPANY: CompanyProfile = {
   SUCURSAL: 'Matriz',
   NOMCAJA: 'Caja-01',
   USUARIO: 'Usuario',
+  gracias: '¡Gracias por tu compra!',
 };
 
 export async function getCompany(): Promise<CompanyProfile> {
@@ -35,8 +36,9 @@ export async function saveCompany(company: CompanyProfile): Promise<void> {
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_SETTINGS: AppSettings = {
-  accentColor: '#3B6AEA',
+  accentColor: '#E8702E',
   paperWidth: 32,
+  showNotavoAttribution: false,
 };
 
 export async function getSettings(): Promise<AppSettings> {
@@ -66,7 +68,6 @@ export async function getHistory(): Promise<HistoryEntry[]> {
 export async function addHistoryEntry(entry: HistoryEntry): Promise<void> {
   const history = await getHistory();
   history.unshift(entry);
-  // Keep only last 100 entries
   await AsyncStorage.setItem(KEYS.HISTORY, JSON.stringify(history.slice(0, 100)));
 }
 

@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, ViewStyle } from 'react-native';
-import { colors, radii, shadow } from '../theme/tokens';
+import React, { useMemo } from 'react';
+import { View, ViewStyle, StyleSheet } from 'react-native';
+import { useTheme } from '../theme';
 
 interface Props {
   children: React.ReactNode;
@@ -9,20 +9,16 @@ interface Props {
 }
 
 export function Card({ children, style, elevated = false }: Props) {
-  return (
-    <View
-      style={[
-        {
-          backgroundColor: colors.surface,
-          borderRadius: radii.lg,
-          borderWidth: 1,
-          borderColor: colors.border,
-          ...(elevated ? shadow.card : {}),
-        },
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
+  const { theme } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    base: {
+      backgroundColor: theme.colors.bg.surface,
+      borderRadius: theme.radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border.subtle,
+      ...(elevated ? theme.shadows.card : {}),
+    },
+  }), [theme]);
+
+  return <View style={[styles.base, style]}>{children}</View>;
 }
