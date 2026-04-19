@@ -32,15 +32,18 @@ export default function EmpresaScreen({ navigation }: Props) {
       Alert.alert('Permiso requerido', 'Se necesita acceso a la galería para agregar el logo.');
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: true,
-      aspect: [4, 1],
-      quality: 0.7,
-      base64: true,
-    });
-    if (!result.canceled && result.assets[0].base64) {
-      setForm((f) => ({ ...f, logoBase64: result.assets[0].base64! }));
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: 'images',
+        aspect: [4, 1], 
+        quality: 0.7,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0].base64) {
+        setForm((f) => ({ ...f, logoBase64: result.assets[0].base64! }));
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -86,20 +89,22 @@ export default function EmpresaScreen({ navigation }: Props) {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Logo</Text>
           <View style={styles.logoRow}>
-            {form.logoBase64 ? (
-              <Image
-                source={{ uri: `data:image/png;base64,${form.logoBase64}` }}
-                style={styles.logoPreview}
-                resizeMode="contain"
-              />
-            ) : (
-              <View style={[styles.logoPlaceholder, { backgroundColor: accent + '14', borderColor: accent + '33' }]}>
-                <Icon name="image" size={28} color={accent} />
-                <Text style={[styles.logoPlaceholderText, { color: accent }]}>Sin logo</Text>
-              </View>
-            )}
-            <View style={{ gap: 8 }}>
-              <PosButton size="sm" variant="outline" label="Seleccionar" icon="upload" onPress={handlePickLogo} />
+            <View style={styles.logoPreviewContainer}>
+              {form.logoBase64 ? (
+                <Image
+                  source={{ uri: `data:image/png;base64,${form.logoBase64}` }}
+                  style={styles.logoPreview}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={[styles.logoPlaceholder, { backgroundColor: accent + '14', borderColor: accent + '33' }]}>
+                  <Icon name="image" size={28} color={accent} />
+                  <Text style={[styles.logoPlaceholderText, { color: accent }]}>Sin logo</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.logoActions}>
+              <PosButton size="sm" variant="outline" label="Seleccionar" icon="upload" onPress={handlePickLogo} full />
               {form.logoBase64 && (
                 <PosButton
                   size="sm"
@@ -107,6 +112,7 @@ export default function EmpresaScreen({ navigation }: Props) {
                   label="Quitar"
                   icon="trash"
                   onPress={() => setForm((f) => ({ ...f, logoBase64: undefined }))}
+                  full
                 />
               )}
             </View>
@@ -162,10 +168,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, fontSize: 15, color: colors.text, fontFamily: fonts.ui,
     backgroundColor: colors.bg,
   },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  logoPreview: { width: 120, height: 50, borderRadius: 6, borderWidth: 1, borderColor: colors.border },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  logoPreviewContainer: { flex: 3 },
+  logoActions: { width: '40%', },
+  logoPreview: { width: '100%', height: 72, borderRadius: 6, borderWidth: 1, borderColor: colors.border },
   logoPlaceholder: {
-    width: 120, height: 50, borderRadius: 6, borderWidth: 1,
+    width: '100%', height: 72, borderRadius: 6, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
   },
   logoPlaceholderText: { fontSize: 13, fontWeight: '500', fontFamily: fonts.ui },
