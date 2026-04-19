@@ -30,3 +30,12 @@ Folder conventions: (e.g., /screens, /components, /services/bluetooth)
 Design reference location: "Go to /design folder, read its readme, and implement the relevant aspects of the design. 
 Implement: TicketPOS App.html.
 This was made with Claude Design, the main project must be in React native components"
+
+App Name: Notavo
+Notavo turns your phone into a pocket-sized cash register — create sale notes, calculate totals, and print receipts to any Bluetooth thermal printer in seconds.
+
+Three-feature bullet version:
+  - 🧾  Create sale notes with items, taxes, discounts, and change calculation
+  - 🖨️ Print over Bluetooth to any 58mm ESC/POS thermal printer
+  - 📚 Keep history offline — every ticket saved, searchable, reprintable
+

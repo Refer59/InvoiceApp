@@ -21,10 +21,16 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.InvoicePOS"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.ico"
+    },
+    "plugins": [
+      ["expo-image-picker", {
+        "photosPermission": "Se necesita acceso a tus fotos para seleccionar el logo de la empresa."
+      }]
+    ]
   }
 }
