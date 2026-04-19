@@ -39,3 +39,6 @@ Three-feature bullet version:
   - 🖨️ Print over Bluetooth to any 58mm ESC/POS thermal printer
   - 📚 Keep history offline — every ticket saved, searchable, reprintable
 
+## Branding
+Canonical brand brief + implementation spec: [docs/branding/NOTAVO_BRAND_BRIEF.md](docs/branding/NOTAVO_BRAND_BRIEF.md). Handoff pointer: [docs/branding/SONNET_HANDOFF.md](docs/branding/SONNET_HANDOFF.md).
+
