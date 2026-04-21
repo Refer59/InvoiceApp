@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, memo } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -10,6 +10,31 @@ import { PosButton } from '../components/PosButton';
 import { useApp } from '../state/AppContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddItem'>;
+
+const Field = memo(({
+  id, label, value, onChange, onFocus, onBlur, keyboardType = 'default', placeholder = '', focused, c, sp, r, fs, uiFont, uiSemiBold,
+}: {
+  id: string; label: string; value: string; onChange: (v: string) => void; onFocus: () => void; onBlur: () => void;
+  keyboardType?: 'default' | 'numeric' | 'decimal-pad'; placeholder?: string;
+  focused: string | null; c: any; sp: any; r: any; fs: any; uiFont: string; uiSemiBold: string;
+}) => (
+  <View style={{ gap: sp.xs }}>
+    <Text style={{ fontSize: fs.label, fontWeight: '600', color: c.text.secondary, fontFamily: uiSemiBold, textTransform: 'uppercase', letterSpacing: 0.6 }}>{label}</Text>
+    <TextInput
+      style={[
+        { height: 48, borderWidth: 1, borderColor: c.border.subtle, borderRadius: r.sm, paddingHorizontal: sp.md, fontSize: fs.input, color: c.text.primary, fontFamily: uiFont, backgroundColor: c.bg.base },
+        focused === id && { borderColor: c.brand.primary, borderWidth: 1.5 },
+      ]}
+      value={value}
+      onChangeText={onChange}
+      keyboardType={keyboardType}
+      placeholder={placeholder}
+      placeholderTextColor={c.text.muted}
+      onFocus={onFocus}
+      onBlur={onBlur}
+    />
+  </View>
+));
 
 export default function AddItemScreen({ navigation }: Props) {
   const { state, dispatch } = useApp();
@@ -25,6 +50,13 @@ export default function AddItemScreen({ navigation }: Props) {
   const [descrip, setDescrip] = useState('');
   const [precio, setPrecio] = useState('');
   const [focused, setFocused] = useState<string | null>(null);
+
+  const handleSetCant = useCallback((v: string) => setCant(v), []);
+  const handleSetClave = useCallback((v: string) => setClave(v), []);
+  const handleSetDescrip = useCallback((v: string) => setDescrip(v), []);
+  const handleSetPrecio = useCallback((v: string) => setPrecio(v), []);
+  const handleFocus = useCallback((id: string) => () => setFocused(id), []);
+  const handleBlur = useCallback(() => setFocused(null), []);
 
   const locale = state.settings.locale ?? 'es-MX';
   const fmtMoney = (n: number) =>
@@ -77,17 +109,6 @@ export default function AddItemScreen({ navigation }: Props) {
       backgroundColor: c.bg.surface, borderRadius: r.lg,
       borderWidth: 1, borderColor: c.border.subtle, padding: sp.lg, gap: sp.lg,
     },
-    field: { gap: sp.xs },
-    fieldLabel: {
-      fontSize: fs.label, fontWeight: '600', color: c.text.secondary,
-      fontFamily: theme.typography.fonts.uiSemiBold, textTransform: 'uppercase', letterSpacing: 0.6,
-    },
-    fieldInput: {
-      height: 48, borderWidth: 1, borderColor: c.border.subtle, borderRadius: r.sm,
-      paddingHorizontal: sp.md, fontSize: fs.input, color: c.text.primary,
-      fontFamily: theme.typography.fonts.ui, backgroundColor: c.bg.base,
-    },
-    fieldInputFocused: { borderColor: c.brand.primary, borderWidth: 1.5 },
     importeRow: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
       borderWidth: 1, borderColor: c.brand.primary + '55',
@@ -102,29 +123,6 @@ export default function AddItemScreen({ navigation }: Props) {
     },
   }), [theme]);
 
-  const Field = ({
-    id, label, value, onChange, keyboardType = 'default', placeholder = '',
-  }: {
-    id: string; label: string; value: string;
-    onChange: (v: string) => void;
-    keyboardType?: 'default' | 'numeric' | 'decimal-pad';
-    placeholder?: string;
-  }) => (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        style={[styles.fieldInput, focused === id && styles.fieldInputFocused]}
-        value={value}
-        onChangeText={onChange}
-        keyboardType={keyboardType}
-        placeholder={placeholder}
-        placeholderTextColor={c.text.muted}
-        onFocus={() => setFocused(id)}
-        onBlur={() => setFocused(null)}
-      />
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
@@ -136,10 +134,10 @@ export default function AddItemScreen({ navigation }: Props) {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Field id="cant" label="Cantidad" value={cant} onChange={setCant} keyboardType="decimal-pad" placeholder="1" />
-          <Field id="clave" label="Clave / SKU" value={clave} onChange={setClave} placeholder="Opcional" />
-          <Field id="descrip" label="Descripción *" value={descrip} onChange={setDescrip} placeholder="Nombre del artículo" />
-          <Field id="precio" label="Precio unitario *" value={precio} onChange={setPrecio} keyboardType="decimal-pad" placeholder="0.00" />
+          <Field id="cant" label="Cantidad" value={cant} onChange={handleSetCant} onFocus={handleFocus('cant')} onBlur={handleBlur} keyboardType="decimal-pad" placeholder="1" focused={focused} c={c} sp={sp} r={r} fs={fs} uiFont={theme.typography.fonts.ui} uiSemiBold={theme.typography.fonts.uiSemiBold} />
+          <Field id="clave" label="Clave / SKU" value={clave} onChange={handleSetClave} onFocus={handleFocus('clave')} onBlur={handleBlur} placeholder="Opcional" focused={focused} c={c} sp={sp} r={r} fs={fs} uiFont={theme.typography.fonts.ui} uiSemiBold={theme.typography.fonts.uiSemiBold} />
+          <Field id="descrip" label="Descripción *" value={descrip} onChange={handleSetDescrip} onFocus={handleFocus('descrip')} onBlur={handleBlur} placeholder="Nombre del artículo" focused={focused} c={c} sp={sp} r={r} fs={fs} uiFont={theme.typography.fonts.ui} uiSemiBold={theme.typography.fonts.uiSemiBold} />
+          <Field id="precio" label="Precio unitario *" value={precio} onChange={handleSetPrecio} onFocus={handleFocus('precio')} onBlur={handleBlur} keyboardType="decimal-pad" placeholder="0.00" focused={focused} c={c} sp={sp} r={r} fs={fs} uiFont={theme.typography.fonts.ui} uiSemiBold={theme.typography.fonts.uiSemiBold} />
           <View style={styles.importeRow}>
             <Text style={styles.importeLabel}>Importe</Text>
             <Text style={styles.importeValue}>${fmtMoney(importe)}</Text>
