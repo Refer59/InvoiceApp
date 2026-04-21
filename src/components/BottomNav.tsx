@@ -3,9 +3,10 @@ import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Receipt, History, Printer, Settings2 } from 'lucide-react-native';
 import { useTheme } from '../theme';
+import { useTabNav, TabKey } from '../navigation/TabNavContext';
 
 interface NavItem {
-  key: string;
+  key: TabKey;
   label: string;
   Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
   route: string;
@@ -20,10 +21,10 @@ const ITEMS: NavItem[] = [
 
 interface Props {
   active: string;
-  onNavigate: (route: string) => void;
 }
 
-export function BottomNav({ active, onNavigate }: Props) {
+export function BottomNav({ active }: Props) {
+  const { goToTab } = useTabNav();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const c = theme.colors;
@@ -56,7 +57,14 @@ export function BottomNav({ active, onNavigate }: Props) {
         const isActive = active === item.key;
         const fg = isActive ? c.brand.primary : c.text.muted;
         return (
-          <Pressable key={item.key} onPress={() => onNavigate(item.route)} style={styles.tab}>
+          <Pressable
+            key={item.key}
+            onPress={() => {
+              if (item.key === active) return;
+              goToTab(item.key);
+            }}
+            style={styles.tab}
+          >
             <item.Icon size={22} color={fg} strokeWidth={isActive ? 2.25 : 1.75} />
             <Text style={[styles.label, { color: fg, fontWeight: isActive ? '600' : '400' }]}>
               {item.label}

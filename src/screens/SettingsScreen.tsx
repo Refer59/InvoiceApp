@@ -7,9 +7,9 @@ import type { RootStackParamList } from '../../App';
 import { useTheme } from '../theme';
 import type { ThemeMode } from '../theme';
 import { NotavoLogo } from '../components/NotavoMark';
-import { BottomNav } from '../components/BottomNav';
 import { LocalePickerModal } from '../components/LocalePickerModal';
 import { useApp } from '../state/AppContext';
+import { useTabNav } from '../navigation/TabNavContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -22,6 +22,7 @@ const LOCALE_LABELS: Record<string, string> = {
 
 export default function SettingsScreen({ navigation }: Props) {
   const { state, updateSettings } = useApp();
+  const { navHeight } = useTabNav();
   const { theme, modeOverride, setMode } = useTheme();
   const c = theme.colors;
   const sp = theme.spacing;
@@ -54,7 +55,7 @@ export default function SettingsScreen({ navigation }: Props) {
     },
     backBtn: { padding: sp.xs },
     title: { fontSize: fs.h3, fontWeight: '700', color: c.text.primary, fontFamily: theme.typography.fonts.uiBold },
-    content: { padding: sp.lg, gap: sp.md, paddingBottom: sp['2xl'] },
+    content: { padding: sp.lg, gap: sp.md, paddingBottom: sp['2xl'] + navHeight },
     card: {
       backgroundColor: c.bg.surface, borderRadius: r.lg,
       borderWidth: 1, borderColor: c.border.subtle, padding: sp.lg, gap: sp.md,
@@ -78,7 +79,7 @@ export default function SettingsScreen({ navigation }: Props) {
     toggleSub: { fontSize: fs.label, color: c.text.muted, fontFamily: theme.typography.fonts.ui, marginTop: 2 },
     footer: { alignItems: 'center', gap: sp.xs, marginTop: sp.lg },
     footerVersion: { fontSize: fs.label, color: c.text.muted, fontFamily: theme.typography.fonts.mono, textAlign: 'center' },
-  }), [theme]);
+  }), [theme, navHeight]);
 
   const localeLabel = state.settings.locale
     ? (LOCALE_LABELS[state.settings.locale] ?? state.settings.locale)
@@ -174,8 +175,6 @@ export default function SettingsScreen({ navigation }: Props) {
           <Text style={styles.footerVersion}>v1.0.0</Text>
         </View>
       </ScrollView>
-
-      <BottomNav active="settings" onNavigate={(route) => navigation.navigate(route as any)} />
 
       <LocalePickerModal
         visible={localeModal}
