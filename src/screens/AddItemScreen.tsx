@@ -1,8 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import {
-  View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -16,6 +14,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'AddItem'>;
 export default function AddItemScreen({ navigation }: Props) {
   const { state, dispatch } = useApp();
   const { theme } = useTheme();
+   const insets = useSafeAreaInsets()
   const c = theme.colors;
   const sp = theme.spacing;
   const r = theme.radii;
@@ -148,7 +147,7 @@ export default function AddItemScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 4}]}>
         <PosButton variant="secondary" label="Cancelar" onPress={() => navigation.goBack()} style={{ flex: 1 }} />
         <PosButton label="Agregar" icon="plus" onPress={handleAdd} style={{ flex: 2 }} />
       </View>
