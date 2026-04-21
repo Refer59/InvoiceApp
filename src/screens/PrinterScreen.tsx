@@ -6,9 +6,9 @@ import { ChevronLeft, Check, ChevronRight, RefreshCw, Bluetooth } from 'lucide-r
 import type { RootStackParamList } from '../../App';
 import { useTheme } from '../theme';
 import { PosButton } from '../components/PosButton';
-import { BottomNav } from '../components/BottomNav';
 import { NotavoMark } from '../components/NotavoMark';
 import { useApp } from '../state/AppContext';
+import { useTabNav } from '../navigation/TabNavContext';
 import {
   scanDevices, connectToDevice, disconnectDevice,
   isConnected, getConnectedId, checkBleState,
@@ -19,6 +19,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Printer'>;
 
 export default function PrinterScreen({ navigation }: Props) {
   const { state, dispatch } = useApp();
+  const { navHeight } = useTabNav();
   const { theme } = useTheme();
   const c = theme.colors;
   const sp = theme.spacing;
@@ -102,7 +103,7 @@ export default function PrinterScreen({ navigation }: Props) {
     scanBtnText: { fontSize: fs.caption, fontWeight: '600', fontFamily: theme.typography.fonts.uiSemiBold, color: c.brand.primary },
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: sp.sm, paddingBottom: sp['4xl'] },
     emptyText: { fontSize: fs.small, color: c.text.muted, fontFamily: theme.typography.fonts.ui },
-    list: { paddingHorizontal: sp.lg, paddingBottom: sp.lg, gap: sp.sm },
+    list: { paddingHorizontal: sp.lg, paddingBottom: sp.lg + navHeight, gap: sp.sm },
     deviceRow: {
       flexDirection: 'row', alignItems: 'center', gap: sp.md,
       backgroundColor: c.bg.surface, borderRadius: r.md,
@@ -111,7 +112,7 @@ export default function PrinterScreen({ navigation }: Props) {
     deviceIcon: { width: 40, height: 40, borderRadius: r.sm, alignItems: 'center', justifyContent: 'center' },
     deviceName: { fontSize: fs.small, fontWeight: '600', color: c.text.primary, fontFamily: theme.typography.fonts.uiSemiBold },
     deviceId: { fontSize: fs.micro, color: c.text.muted, fontFamily: theme.typography.fonts.mono },
-  }), [theme]);
+  }), [theme, navHeight]);
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -188,7 +189,6 @@ export default function PrinterScreen({ navigation }: Props) {
           );
         }}
       />
-      <BottomNav active="printer" onNavigate={(route) => navigation.navigate(route as any)} />
     </SafeAreaView>
   );
 }

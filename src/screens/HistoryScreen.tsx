@@ -6,9 +6,9 @@ import { ChevronLeft, Printer, ChevronRight, Trash2, Search } from 'lucide-react
 import type { RootStackParamList } from '../../App';
 import { useTheme } from '../theme';
 import { PosButton } from '../components/PosButton';
-import { BottomNav } from '../components/BottomNav';
 import { NotavoMark } from '../components/NotavoMark';
 import { useApp } from '../state/AppContext';
+import { useTabNav } from '../navigation/TabNavContext';
 import { clearHistory } from '../services/storage';
 import type { HistoryEntry } from '../types';
 
@@ -16,6 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'History'>;
 
 export default function HistoryScreen({ navigation }: Props) {
   const { state, dispatch } = useApp();
+  const { navHeight } = useTabNav();
   const { theme } = useTheme();
   const c = theme.colors;
   const sp = theme.spacing;
@@ -68,7 +69,7 @@ export default function HistoryScreen({ navigation }: Props) {
     empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: sp.md, paddingBottom: sp['4xl'] },
     emptyTitle: { fontSize: fs.mono2, fontWeight: '700', color: c.text.primary, fontFamily: theme.typography.fonts.uiBold },
     emptyText: { fontSize: fs.small, color: c.text.secondary, fontFamily: theme.typography.fonts.ui, textAlign: 'center' },
-    list: { padding: sp.lg, gap: sp.sm, paddingBottom: sp.xl },
+    list: { padding: sp.lg, gap: sp.sm, paddingBottom: sp.xl + navHeight },
     row: {
       flexDirection: 'row', alignItems: 'center', gap: sp.md,
       backgroundColor: c.bg.surface, borderRadius: r.md,
@@ -80,7 +81,7 @@ export default function HistoryScreen({ navigation }: Props) {
     rowMeta: { fontSize: fs.label, color: c.text.muted, fontFamily: theme.typography.fonts.ui },
     rowActions: { flexDirection: 'row', alignItems: 'center', gap: sp.xs },
     reprintBtn: { width: 36, height: 36, borderRadius: r.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: c.brand.primarySoft },
-  }), [theme]);
+  }), [theme, navHeight]);
 
   const renderItem = ({ item }: { item: HistoryEntry }) => (
     <Pressable style={styles.row} onPress={() => handleReprint(item)}>
@@ -143,7 +144,6 @@ export default function HistoryScreen({ navigation }: Props) {
           />
         </>
       )}
-      <BottomNav active="history" onNavigate={(route) => navigation.navigate(route as any)} />
     </SafeAreaView>
   );
 }

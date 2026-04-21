@@ -8,13 +8,14 @@ import type { RootStackParamList } from '../../App';
 import { useTheme } from '../theme';
 import { NotavoLogo, NotavoMark } from '../components/NotavoMark';
 import { Icon } from '../components/Icon';
-import { BottomNav } from '../components/BottomNav';
 import { useApp } from '../state/AppContext';
+import { useTabNav } from '../navigation/TabNavContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Dashboard'>;
 
 export default function DashboardScreen({ navigation }: Props) {
   const { state, dispatch } = useApp();
+  const { navHeight } = useTabNav();
   const { theme } = useTheme();
   const c = theme.colors;
   const sp = theme.spacing;
@@ -50,7 +51,7 @@ export default function DashboardScreen({ navigation }: Props) {
     logo: { fontSize: theme.typography.fontSizes.h1, fontFamily: theme.typography.fonts.logo, color: c.brand.primary },
     root: { flex: 1, backgroundColor: c.bg.base },
     scroll: { flex: 1 },
-    content: { paddingBottom: sp.lg },
+    content: { paddingBottom: sp.lg + navHeight },
     header: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: sp.xl, paddingVertical: sp.lg,
@@ -109,7 +110,7 @@ export default function DashboardScreen({ navigation }: Props) {
       padding: sp.xl, alignItems: 'center', gap: sp.md, ...theme.shadows.card,
     },
     emptyText: { paddingBottom: 10, paddingTop: 5, fontSize: fs.small, color: c.text.secondary, fontFamily: theme.typography.fonts.ui, textAlign: 'center' },
-  }), [theme]);
+  }), [theme, navHeight]);
 
   const connected = printerStatus === 'connected';
   return (
@@ -213,8 +214,6 @@ export default function DashboardScreen({ navigation }: Props) {
           </>
         )}
       </ScrollView>
-
-      <BottomNav active="dashboard" onNavigate={(route) => navigation.navigate(route as any)} />
     </SafeAreaView>
   );
 }

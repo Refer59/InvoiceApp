@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { View, Text, Pressable, Modal, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, X } from 'lucide-react-native';
 import { useTheme } from '../theme';
@@ -33,10 +33,34 @@ export function LocalePickerModal({ visible, current, onSelect, onClose }: Props
   const r = theme.radii;
   const fs = theme.typography.fontSizes;
 
+  const screenH = Dimensions.get('window').height;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslate = useRef(new Animated.Value(screenH)).current;
+  const [mounted, setMounted] = useState(visible);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.parallel([
+        Animated.timing(overlayOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.timing(sheetTranslate, { toValue: 0, duration: 260, useNativeDriver: true }),
+      ]).start();
+    } else if (mounted) {
+      Animated.parallel([
+        Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(sheetTranslate, { toValue: screenH, duration: 220, useNativeDriver: true }),
+      ]).start(({ finished }) => {
+        if (finished) setMounted(false);
+      });
+    }
+  }, [visible, overlayOpacity, sheetTranslate, screenH, mounted]);
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose} />
-      <View
+    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+      <Animated.View
         style={[
           styles.sheet,
           {
@@ -44,6 +68,7 @@ export function LocalePickerModal({ visible, current, onSelect, onClose }: Props
             paddingBottom: insets.bottom + sp.lg,
             borderTopLeftRadius: r.xl,
             borderTopRightRadius: r.xl,
+            transform: [{ translateY: sheetTranslate }],
           },
         ]}
       >
@@ -92,13 +117,13 @@ export function LocalePickerModal({ visible, current, onSelect, onClose }: Props
             </Pressable>
           );
         })}
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  overlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: { position: 'absolute', bottom: 0, left: 0, right: 0 },
   // 4px height drag handle pill — below radii.xs by design
   handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 4 },

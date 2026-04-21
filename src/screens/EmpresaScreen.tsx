@@ -174,7 +174,7 @@ export default function EmpresaScreen({ navigation }: Props) {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + sp.xs + 6 }]}>
+      <View style={[styles.footer]}>
         <PosButton variant="secondary" label="Cancelar" onPress={() => navigation.goBack()} style={{ flex: 1 }} />
         <PosButton label="Guardar" icon="check" onPress={handleSave} style={{ flex: 2 }} />
       </View>
